@@ -1,14 +1,19 @@
 package com.example.lucianolimina.signalmap;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.telephony.PhoneStateListener;
+import android.telephony.SignalStrength;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -49,6 +54,13 @@ public class MainActivity extends AppCompatActivity {
     private FusedLocationProviderClient locationProviderClient;
     private LocationCallback locationCallback;
 
+
+    private MyPhoneStateListener phoneStateListener;
+    private TelephonyManager telephonyManager;
+
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -81,8 +93,7 @@ public class MainActivity extends AppCompatActivity {
         locationRequest.setInterval(5000);
         locationRequest.setFastestInterval(5000);
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-
-
+        //Callback
         locationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(LocationResult locationResult) {
@@ -127,11 +138,27 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-
+        // Client posizione
         locationProviderClient = LocationServices.getFusedLocationProviderClient(this);
+
+
+        //Client segnale
+
+        phoneStateListener = new MyPhoneStateListener();
+        phoneStateListener.setSignalPowertText(signalStrengt);
+        telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+
+
+
+
         start.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                telephonyManager.listen(phoneStateListener,PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
+
+                carrier.setText(telephonyManager.getSimOperator());
+                Log.d("SIGNAL INFO", "" + telephonyManager.getSimOperator() + signalStrengt);
+
                 if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     // TODO: Consider calling
                     //    ActivityCompat#requestPermissions
@@ -142,6 +169,8 @@ public class MainActivity extends AppCompatActivity {
                     // for ActivityCompat#requestPermissions for more details.
                     return;
                 }
+
+
                 locationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null);
 
                 //Prende l'ultima posizione
@@ -161,6 +190,8 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
                 });
+
+                //Get signal strength
 
 
             }
